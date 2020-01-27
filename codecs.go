@@ -6,6 +6,7 @@ package binary
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -219,11 +220,107 @@ func (c *reflectStructCodec) EncodeTo(e *Encoder, rv reflect.Value) (err error) 
 func (c *reflectStructCodec) DecodeTo(d *Decoder, rv reflect.Value) (err error) {
 	for _, i := range *c {
 		if v := rv.Field(i.Index); v.CanSet() {
-			if err = i.Codec.DecodeTo(d, reflect.Indirect(v)); err != nil {
+			if err = i.Codec.DecodeTo(d, v); err != nil {
 				return
 			}
 		}
 	}
+	return
+}
+
+// ------------------------------------------------------------------------------
+
+type delayedCodec struct{}
+
+func (c *delayedCodec) EncodeTo(e *Encoder, rv reflect.Value) (err error) {
+	if rv.IsNil() {
+		e.writeBool(true)
+		return
+	}
+
+	var (
+		innerCodec Codec
+		innerValue = rv.Interface()
+		innerType  = reflect.Indirect(reflect.ValueOf(innerValue)).Type()
+	)
+	if !knownCustomTypes.isStoredType(innerType) {
+		return errors.New(fmt.Sprintf("Interaface %s, implementation %s is not registered. Did you forget call binary.register()", rv.Type().Name(), innerType.Name()))
+	}
+	innerCodec, err = scan(innerType)
+	if err != nil {
+		return err
+	}
+
+	e.writeBool(false)
+	e.WriteUint32(knownCustomTypes.getHash(innerType))
+	return innerCodec.EncodeTo(e, reflect.Indirect(rv.Elem()))
+}
+
+func (c *delayedCodec) DecodeTo(d *Decoder, rv reflect.Value) (err error) {
+	var isNilRv = false
+	isNilRv, err = d.ReadBool()
+	if err != nil || isNilRv {
+		return
+	}
+
+	var (
+		innerCodec Codec
+		innerType  reflect.Type
+		hashCode   uint32
+	)
+	if hashCode, err = d.ReadUint32(); err != nil {
+		return
+	}
+	if innerTypeIntrfs, ok := knownCustomTypes.loadType(hashCode); !ok {
+		return errors.New(fmt.Sprintf("Interaface %s, implementation %s is not registered. Did you forget call binary.register()", rv.Type().Name(), innerType.Name()))
+	} else {
+		innerType = innerTypeIntrfs.(reflect.Type)
+	}
+	innerCodec, err = scan(innerType)
+	if err != nil {
+		return
+	}
+
+	innerValue := reflect.New(innerType)
+	err = innerCodec.DecodeTo(d, reflect.Indirect(innerValue))
+	if err != nil {
+		return
+	}
+	rv.Set(innerValue)
+	return
+}
+
+// ------------------------------------------------------------------------------
+
+type pointerCodec struct {
+	innerCodec Codec
+	innerType  reflect.Type
+}
+
+func (c *pointerCodec) EncodeTo(e *Encoder, rv reflect.Value) (err error) {
+	if rv.IsNil() {
+		e.writeBool(true)
+		return
+	}
+	c.innerType = rv.Elem().Type()
+
+	e.writeBool(false)
+	return c.innerCodec.EncodeTo(e, rv.Elem())
+}
+
+func (c *pointerCodec) DecodeTo(d *Decoder, rv reflect.Value) (err error) {
+	isNilRv := false
+	isNilRv, err = d.ReadBool()
+	if err != nil || isNilRv {
+		return
+	}
+
+	innerValue := reflect.New(c.innerType)
+	err = c.innerCodec.DecodeTo(d, reflect.Indirect(innerValue))
+	if err != nil {
+		return
+	}
+	rv.Set(innerValue)
 	return
 }
 

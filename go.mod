@@ -1,4 +1,4 @@
-module github.com/kelindar/binary
+module github.com/alrtve/binary
 
 go 1.13
 

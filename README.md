@@ -31,6 +31,44 @@ var v message
 err := binary.Unmarshal(encoded, &v)
 ```
 
+#UPD[alrtve]
+Added arbitrary **interafaces** and **pointers** support. To serialize/deserialize interfaces its implementation must first be registered by calling `Register(interfaceImplementationType reflect.Type)`:
+```
+interface Message {
+    GetBody() string
+}
+
+type MailMessage struct {
+    Body string
+}
+
+func (m *MailMessage) GetBody () string{
+    return m.Body
+}
+
+type Notification struct {
+    Name string
+    Mess Message
+}
+```
+
+Register `MailMessage` implementation and serialize:
+```
+RegisterType(reflect.TypeOf((*MailMessage)(nil)).Elem())
+n := Notification {
+    Name: "Jonh",
+    Mess: &MailMessage {
+        Body: "Pay Attention",
+    }
+}
+encoded, err := binary.Marshal(&n)
+```
+Deserialize:
+```
+d := Notification{}
+err := binary.Unmarshal(encoded, &d)
+``` 
+
 # Disclaimer
 
 This is not intended as a replacement for JSON or protobuf, this codec does not maintain any versioning or compatibility - and not intended to become one. The goal of this binary codec is to efficiently exchange binary data of known format between systems where you control both ends and both of them are written in Go.

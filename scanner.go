@@ -186,6 +186,15 @@ func scanType(t reflect.Type) (Codec, error) {
 
 	case reflect.Float64:
 		return new(float64Codec), nil
+
+	case reflect.Interface:
+		return new(delayedCodec), nil
+	case reflect.Ptr:
+		innerCodec, err := scan(t.Elem())
+		if err != nil {
+			return nil, err
+		}
+		return &pointerCodec{innerCodec: innerCodec}, nil
 	}
 
 	return nil, errors.New("binary: unsupported type " + t.String())

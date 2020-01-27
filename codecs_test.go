@@ -374,3 +374,93 @@ func Test_Float64(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, v, o)
 }
+
+// Interface serialization test
+type interfs interface {
+	GetName() string
+	SetName(s string)
+}
+
+type interfsStruct struct {
+	Name string
+}
+
+func (i *interfsStruct) GetName() string {
+	return i.Name
+}
+
+func (i *interfsStruct) SetName(s string) {
+	i.Name = s
+}
+
+type interfacedStruct struct {
+	A string
+	B interfs
+	C interface{}
+}
+
+func Test_Interface(t *testing.T) {
+	var (
+		s0i = interfacedStruct{
+			A: "A",
+			B: &interfsStruct{
+				Name: "B",
+			},
+		}
+	)
+
+	RegisterType(reflect.TypeOf((*interfsStruct)(nil)).Elem())
+
+	b, err := Marshal(&s0i)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+
+	var s0id = interfacedStruct{}
+	err = Unmarshal(b, &s0id)
+	assert.NoError(t, err)
+
+	assert.Equal(t, s0id.A, s0i.A)
+	assert.Equal(t, s0id.B.GetName(), s0i.B.GetName())
+	assert.Equal(t, s0id.C, s0i.C)
+}
+
+type nillableStruct struct {
+	A *float64
+	B *float64
+	C float64
+
+	D *[]int
+	E *[]int
+	F []int
+}
+
+func Test_Pointer(t *testing.T) {
+	var (
+		fa  = 32.0
+		sd  = []int{1}
+		s0n = nillableStruct{
+			A: &fa,
+			B: nil,
+			C: 12.0,
+			D: &sd,
+			E: nil,
+			F: []int{2},
+		}
+	)
+
+	b, err := Marshal(&s0n)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+
+	var s0id = nillableStruct{}
+	err = Unmarshal(b, &s0id)
+	assert.NoError(t, err)
+
+	assert.Equal(t, s0id.A, s0n.A)
+	assert.Equal(t, s0id.B, s0n.B)
+	assert.Equal(t, s0id.C, s0n.C)
+	assert.Equal(t, s0id.D, s0n.D)
+	assert.Equal(t, s0id.E, s0n.E)
+	assert.Equal(t, s0id.F, s0n.F)
+
+}
