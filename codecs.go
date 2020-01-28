@@ -77,7 +77,7 @@ func (c *reflectSliceCodec) DecodeTo(d *Decoder, rv reflect.Value) (err error) {
 	if l, err = binary.ReadUvarint(d.r); err == nil && l > 0 {
 		rv.Set(reflect.MakeSlice(rv.Type(), int(l), int(l)))
 		for i := 0; i < int(l); i++ {
-			v := reflect.Indirect(rv.Index(i))
+			v := rv.Index(i)
 			if err = c.elemCodec.DecodeTo(d, v); err != nil {
 				return
 			}

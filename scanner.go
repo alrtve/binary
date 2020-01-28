@@ -194,7 +194,7 @@ func scanType(t reflect.Type) (Codec, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &pointerCodec{innerCodec: innerCodec}, nil
+		return &pointerCodec{innerCodec: innerCodec, innerType: t.Elem()}, nil
 	}
 
 	return nil, errors.New("binary: unsupported type " + t.String())

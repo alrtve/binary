@@ -462,5 +462,21 @@ func Test_Pointer(t *testing.T) {
 	assert.Equal(t, s0id.D, s0n.D)
 	assert.Equal(t, s0id.E, s0n.E)
 	assert.Equal(t, s0id.F, s0n.F)
+}
 
+func Test_SlicePointer(t *testing.T) {
+	var (
+		f = 32.0
+		s = []*float64{&f}
+	)
+
+	b, err := Marshal(&s)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+
+	var sd = make([]*float64, 0)
+	err = Unmarshal(b, &sd)
+	assert.NoError(t, err)
+
+	assert.Equal(t, *s[0], *sd[0])
 }
