@@ -31,7 +31,7 @@ var v message
 err := binary.Unmarshal(encoded, &v)
 ```
 
-#UPD[alrtve]
+# UPD[alrtve]
 Added arbitrary **interafaces** and **pointers** support. To serialize/deserialize interfaces its implementation must first be registered by calling `Register(interfaceImplementationType reflect.Type)`:
 ```
 interface Message {
