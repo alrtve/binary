@@ -6,7 +6,7 @@ package sorted
 import (
 	"testing"
 
-	"github.com/kelindar/binary"
+	"github.com/alrtve/binary"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -33,6 +33,9 @@ func (c customTypes) isStoredType(p reflect.Type) bool {
 
 func (c customTypes) getHash(p reflect.Type) uint32 {
 	s := p.Name()
+	if p.Kind() == reflect.Ptr {
+		s = p.Elem().Name()
+	}
 	fnvHash := fnv.New32()
 	fnvHash.Write([]byte(s))
 

@@ -6,7 +6,7 @@ package unsafe
 import (
 	"testing"
 
-	"github.com/kelindar/binary"
+	"github.com/alrtve/binary"
 )
 
 var arr = []uint64{4, 5, 6, 1, 2, 3, 5, 3, 2, 6, 1, 6, 7, 6, 1, 2, 6, 4, 5, 6, 1, 2, 3, 5, 3, 2, 6, 1, 6,

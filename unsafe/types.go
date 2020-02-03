@@ -6,7 +6,7 @@ package unsafe
 import (
 	"reflect"
 
-	"github.com/kelindar/binary"
+	"github.com/alrtve/binary"
 )
 
 // ------------------------------------------------------------------------------
