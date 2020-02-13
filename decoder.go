@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"io/ioutil"
 	"math"
 	"reflect"
 	"sync"
@@ -28,6 +29,23 @@ func Unmarshal(b []byte, v interface{}) (err error) {
 
 	// Get the decoder from the pool, reset it
 	d := decoders.Get().(*Decoder)
+	d.r.(*reader).Reset(b) // Reset the reader
+
+	// Decode and set the buffer if successful and free the decoder
+	err = d.Decode(v)
+	decoders.Put(d)
+	return
+}
+
+// Unmarshal decodes the payload from the binary format.
+func UnmarshalFrom(r io.Reader, v interface{}) (err error) {
+
+	// Get the decoder from the pool, reset it
+	d := decoders.Get().(*Decoder)
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return
+	}
 	d.r.(*reader).Reset(b) // Reset the reader
 
 	// Decode and set the buffer if successful and free the decoder
@@ -63,6 +81,12 @@ func (d *Decoder) Decode(v interface{}) (err error) {
 	rv := reflect.Indirect(reflect.ValueOf(v))
 	if !rv.CanAddr() {
 		return errors.New("binary: can only Decode to pointer type")
+	}
+
+	if rv.Kind() == reflect.Interface && rv.NumMethod() == 0 {
+		o := reflect.New(rv.Elem().Type())
+		o.Elem().Set(rv.Elem())
+		rv = o.Elem()
 	}
 
 	// Scan the type (this will load from cache)
